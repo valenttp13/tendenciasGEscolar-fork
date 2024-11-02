@@ -19,7 +19,8 @@ import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 
 // Service Imports
-import { getCourses, createUser } from '@/services/api/courses'
+import { getCourses } from '@/services/api/courses'
+import { createUser } from '@/services/api/users'
 
 // Import `react-hot-toast`
 import toast from 'react-hot-toast'
@@ -32,9 +33,11 @@ const CreateUser = () => {
 
   // States
   const [formData, setFormData] = useState({
+    username: '',
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     role: 'estudiante' as UserRole,
     courses: [] as number[]
   })
@@ -61,16 +64,24 @@ const CreateUser = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validación básica de la contraseña
+    if (!formData.password || formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
+
     try {
       await createUser({
+        username: formData.username,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
+        password: formData.password,
         role: formData.role,
         courses: formData.courses
       })
       toast.success('User created successfully!')
-      router.push('/users') // Redirigir a la página de usuarios o cualquier otra página después de la creación
+      router.push('/admin/users') // Redirigir a la página de usuarios o cualquier otra página después de la creación
     } catch (error) {
       toast.error('Failed to create user')
       console.error('Error creating user:', error)
@@ -85,6 +96,15 @@ const CreateUser = () => {
         </Typography>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={5}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label='Username'
+                value={formData.username}
+                placeholder='Username'
+                onChange={e => handleFormChange('username', e.target.value)}
+              />
+            </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -113,12 +133,19 @@ const CreateUser = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label='Password'
+                type='password'
+                value={formData.password}
+                placeholder='Password'
+                onChange={e => handleFormChange('password', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Role</InputLabel>
-                <Select
-                  value={formData.role}
-                  onChange={e => handleFormChange('role', e.target.value as UserRole)}
-                >
+                <Select value={formData.role} onChange={e => handleFormChange('role', e.target.value as UserRole)}>
                   <MenuItem value='estudiante'>Estudiante</MenuItem>
                   <MenuItem value='profesor'>Profesor</MenuItem>
                   <MenuItem value='administrativo'>Administrativo</MenuItem>
@@ -132,14 +159,14 @@ const CreateUser = () => {
                   multiple
                   value={formData.courses}
                   onChange={e => handleFormChange('courses', e.target.value as number[])}
-                  renderValue={(selected) =>
+                  renderValue={selected =>
                     courses
-                      .filter((course) => selected.includes(course.id))
-                      .map((course) => course.nombre)
+                      .filter(course => selected.includes(course.id))
+                      .map(course => course.nombre)
                       .join(', ')
                   }
                 >
-                  {courses.map((course) => (
+                  {courses.map(course => (
                     <MenuItem key={course.id} value={course.id}>
                       {course.nombre}
                     </MenuItem>
